@@ -1,0 +1,59 @@
+name: ML CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "ml/**"
+      - "shared/**"
+      - "data/**"
+      - "scripts/check_ml_artifacts.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ml-ci.yml"
+  pull_request:
+    paths:
+      - "ml/**"
+      - "shared/**"
+      - "data/**"
+      - "scripts/check_ml_artifacts.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/ml-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ml-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ml:
+    name: Smoke tests and artifact checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Ruff lint
+        run: uv run ruff check ml shared
+
+      - name: ML smoke tests
+        run: uv run pytest ml/tests -v --tb=short
+
+      - name: Artifact manifest check
+        run: uv run python scripts/check_ml_artifacts.py

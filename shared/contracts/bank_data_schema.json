@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bank Marketing Dataset Schema Contract",
+  "description": "Schema contract for bank-additional-full.csv used in the Bank Offer Feed Ranking project.",
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "The target field (y) indicating whether the customer subscribed to a term deposit (yes/no). Used for base conversion signals."
+    },
+    "excluded_fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Fields that MUST be explicitly excluded from default training and serving features to prevent data leakage.",
+      "enum": [["duration"]]
+    },
+    "leakage_note": {
+      "type": "string",
+      "description": "CRITICAL: The 'duration' field MUST be excluded by default from modeling. It records the last contact duration, which is highly predictive due to target leakage (duration is only known after the call ends). It creates unrealistic leakage for decision-time prediction."
+    },
+    "required_columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      },
+      "description": "Core expected columns from the UCI dataset (not exhaustive)."
+    }
+  },
+  "default": {
+    "target": "y",
+    "excluded_fields": ["duration"],
+    "leakage_note": "CRITICAL: The 'duration' field MUST be excluded by default from modeling. It records the last contact duration, which is highly predictive due to target leakage (duration is only known after the call ends). It creates unrealistic leakage for decision-time prediction.",
+    "required_columns": [
+      { "name": "age", "type": "integer" },
+      { "name": "job", "type": "string" },
+      { "name": "marital", "type": "string" },
+      { "name": "education", "type": "string" },
+      { "name": "default", "type": "string" },
+      { "name": "housing", "type": "string" },
+      { "name": "loan", "type": "string" },
+      { "name": "contact", "type": "string" },
+      { "name": "month", "type": "string" },
+      { "name": "day_of_week", "type": "string" },
+      { "name": "duration", "type": "integer" },
+      { "name": "campaign", "type": "integer" },
+      { "name": "pdays", "type": "integer" },
+      { "name": "previous", "type": "integer" },
+      { "name": "poutcome", "type": "string" },
+      { "name": "emp.var.rate", "type": "number" },
+      { "name": "cons.price.idx", "type": "number" },
+      { "name": "cons.conf.idx", "type": "number" },
+      { "name": "euribor3m", "type": "number" },
+      { "name": "nr.employed", "type": "number" },
+      { "name": "y", "type": "string" }
+    ]
+  }
+}

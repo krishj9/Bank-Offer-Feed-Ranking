@@ -1,0 +1,20 @@
+{
+  "name": "bank-offer-feed-ranking-root",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root workspace and tooling configuration for Bank Offer Feed Ranking",
+  "scripts": {
+    "bootstrap": "npm install --prefix frontend",
+    "lint:backend": "bash -c 'source .venv/bin/activate && ruff check backend shared/tests'",
+    "lint:frontend": "npm run lint --prefix frontend",
+    "lint:ml": "bash -c 'source .venv/bin/activate && ruff check ml shared'",
+    "lint": "npm run lint:backend && npm run lint:ml && npm run lint:frontend",
+    "typecheck:backend": "bash -c 'source .venv/bin/activate && mypy'",
+    "test:backend": "bash -c 'source .venv/bin/activate && pytest backend/tests shared/tests'",
+    "test:ml": "bash -c 'source .venv/bin/activate && pytest ml/tests'",
+    "test:frontend": "npm run test --prefix frontend",
+    "test": "npm run test:backend && npm run test:ml && npm run test:frontend",
+    "check:artifacts": "bash -c 'source .venv/bin/activate && python scripts/check_ml_artifacts.py'",
+    "quality": "bash scripts/quality.sh"
+  }
+}

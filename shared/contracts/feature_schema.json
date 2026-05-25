@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Feature Schema Contract",
+  "description": "Schema defining offline/online features for the Bank Offer Feed Ranking.",
+  "type": "object",
+  "properties": {
+    "user_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["numerical", "categorical", "boolean"] },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "offer_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["numerical", "categorical", "boolean"] },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "user_offer_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["numerical", "categorical", "boolean"] },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "context_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["numerical", "categorical", "boolean"] },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "label": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "excluded_features": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "default": {
+    "user_features": [
+      { "name": "age", "type": "numerical", "description": "User age in years" },
+      { "name": "job", "type": "categorical", "description": "Type of job" },
+      { "name": "marital", "type": "categorical", "description": "Marital status" },
+      { "name": "education", "type": "categorical", "description": "Education level" },
+      { "name": "default", "type": "categorical", "description": "Has credit in default?" },
+      { "name": "housing", "type": "categorical", "description": "Has housing loan?" },
+      { "name": "loan", "type": "categorical", "description": "Has personal loan?" },
+      { "name": "contact", "type": "categorical", "description": "Contact communication type" },
+      { "name": "campaign", "type": "numerical", "description": "Number of contacts performed during this campaign" },
+      { "name": "pdays", "type": "numerical", "description": "Number of days that passed by after the client was last contacted" },
+      { "name": "previous", "type": "numerical", "description": "Number of contacts performed before this campaign" },
+      { "name": "poutcome", "type": "categorical", "description": "Outcome of the previous marketing campaign" },
+      { "name": "emp_var_rate", "type": "numerical", "description": "Employment variation rate" },
+      { "name": "cons_price_idx", "type": "numerical", "description": "Consumer price index" },
+      { "name": "cons_conf_idx", "type": "numerical", "description": "Consumer confidence index" },
+      { "name": "euribor3m", "type": "numerical", "description": "Euribor 3 month rate" },
+      { "name": "nr_employed", "type": "numerical", "description": "Number of employees" }
+    ],
+    "offer_features": [
+      { "name": "offer_id", "type": "categorical", "description": "Unique identifier for the offer" },
+      { "name": "offer_type", "type": "categorical", "description": "Type of offer (e.g. term_deposit, savings_boost)" },
+      { "name": "category", "type": "categorical", "description": "Product category" },
+      { "name": "priority_weight", "type": "numerical", "description": "Business priority weight for reranking/scoring" }
+    ],
+    "user_offer_features": [
+      { "name": "is_eligible", "type": "boolean", "description": "Whether the user is eligible for the offer" },
+      { "name": "affinity_score", "type": "numerical", "description": "Heuristic affinity score based on user history and offer type" }
+    ],
+    "context_features": [
+      { "name": "month", "type": "categorical", "description": "Contact month of year" },
+      { "name": "day_of_week", "type": "categorical", "description": "Contact day of the week" }
+    ],
+    "label": {
+      "name": "y",
+      "type": "boolean",
+      "description": "Synthetic or true conversion label"
+    },
+    "excluded_features": [
+      "duration"
+    ]
+  }
+}

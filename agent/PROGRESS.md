@@ -1,0 +1,57 @@
+# Progress
+
+- [x] **T-001**: Repo scaffold (Created top-level folders and README placeholders).
+- [x] **T-002**: Created README.md, AGENTS.md, and .gitignore.
+- [x] **T-004**: Created React SPA skeleton (App shell, Home page, API client placeholder, and basic styling foundation with Tailwind CSS v4) that compiles and runs flawlessly.
+- [x] **T-005**: Python and JS tooling (Set up root pyproject.toml, package.json, configuring ESLint, Vitest, pytest, and Ruff).
+- [x] **T-006**: Defined schema contract for bank-additional-full.csv in `shared/contracts/bank_data_schema.json` with explicit exclusions for `duration`.
+- [x] **T-007**: Raw data loader implemented in `ml/data/loaders.py`.
+- [x] **T-008**: Data validation implemented in `ml/data/validation.py` against the JSON schema contract.
+- [x] **T-009**: Preprocessing pipeline implemented in `ml/data/preprocess.py` (normalizes categorical values, handles missing values, excludes duration, maps target to 1/0).
+- [x] **T-010**: Sample user extraction implemented in `ml/data/sample_users.py` (extracts 10 representative demo profiles).
+- [x] **T-011**: Defined synthetic offer schema and versioning rules in `shared/contracts/offer_schema.json`.
+- [x] **T-016**: Defined feature schema for user, offer, user-offer, and context features in `shared/contracts/feature_schema.json`, explicitly excluding `duration`.
+- [x] **T-012**: Offer catalog generator implemented in `ml/data/offers.py` producing `data/synthetic/offers.csv`.
+- [x] **T-013**: Eligibility engine implemented in `ml/data/eligibility.py` for deterministic filtering.
+- [x] **T-014**: Pair generation pipeline implemented in `ml/data/pairs.py` and orchestrated via `ml/data/run_synthetic.py`, producing `data/synthetic/user_offer_pairs.parquet` and logging pair count/coverage to `output/reports/pair_generation_report.json`.
+- [x] **T-015**: Synthetic label generation implemented in `ml/data/labels.py` using deterministic heuristics and original target `y`. Integrated into `ml/data/run_synthetic.py` and tested in `ml/tests/test_synthetic.py`. Report saved to `output/reports/label_generation_report.json`.
+- [x] **T-017**: Shared feature builder implemented in `ml/features/builder.py` for reproducible offline/online feature pipelines, validated with unit tests.
+- [x] **T-018**: Train-validation split strategy (Implemented `split.py` with deterministic logic grouped by `user_id`, outputting split statistics to `output/reports/split_report.json`).
+- [x] **T-019**: Baseline model trainer (Implemented `train.py` using scikit-learn's `HistGradientBoostingClassifier`, saving baseline model and preprocessor manifest to `ml/artifacts/run_manifest.json`).
+- [x] **T-020**: Offline evaluation (Implemented `evaluate.py` tracking classification metrics and ranking metrics like Precision@K, Recall@K, MAP@K, and NDCG@K to `output/metrics/evaluation_metrics.json`).
+- [x] **T-021**: Artifact loader (Implemented backend-safe model artifact loading in `backend/app/core/model_loader.py` with graceful handling of missing/corrupt artifacts and pytest coverage in `backend/tests/test_model_loader.py`).
+- [x] **T-022**: API schema definitions (Added Pydantic schemas for rank request/response, feedback request/response, and sample-users payloads in `backend/app/schemas/`).
+- [x] **T-023**: Candidate service (Implemented `backend/app/services/candidate_service.py` to load sample users and offers, resolve profiles, and generate eligible candidate sets with `duration` excluded).
+- [x] **T-024**: Ranking service (Implemented `backend/app/services/ranking_service.py` to build features, invoke `ModelArtifactLoader`, score candidates, normalize, and deterministically sort top-K with fallback scoring when artifacts are missing).
+- [x] **T-025**: Reranking service (Implemented configurable reranking in `backend/app/services/rerank_service.py` with deduplication, diversity by offer type, deterministic tie-breaks, and priority boost from external JSON config).
+- [x] **T-026**: Explanation service (Added deterministic template-based explanations with guaranteed fallback behavior in `backend/app/services/explanation_service.py`).
+- [x] **T-027**: Rank API endpoint (Implemented `POST /api/v1/rank` in `backend/app/api/rank.py` with graceful handling for missing users, no eligible offers, and missing model artifacts).
+- [x] **T-028**: Sample users endpoint (Implemented `GET /api/v1/sample-users` in `backend/app/api/rank.py` and wired router in `backend/app/main.py`).
+- [x] **T-029**: Feedback endpoint (Implemented `POST /api/v1/feedback` in `backend/app/api/feedback.py` with JSONL persistence in `backend/app/services/feedback_service.py`).
+- [x] **Wave 3 tests**: Added backend API tests covering ranking, sample-users, feedback persistence, and validation behavior in `backend/tests/test_rank_api.py` and `backend/tests/test_feedback_api.py`; `uv run pytest backend/tests` passes.
+- [x] **T-030**: UI data models — TypeScript types strictly aligned with backend Pydantic schemas (rank, feedback, sample-users) in `frontend/src/api/client.ts`.
+- [x] **T-031**: Customer selector — dynamically loads sample users from `GET /api/v1/sample-users`, triggering rank on selection with fallback mock data, in `frontend/src/App.tsx`.
+- [x] **T-032**: Feed results — displays ranked offers with title, score (raw score & priority adjustments), explanation, and rank position in a beautiful UI feed, in `frontend/src/App.tsx`.
+- [x] **T-033**: Feedback controls — fully interactive accept/view/dismiss/not-interested controls that submit feedback events directly to `POST /api/v1/feedback`, in `frontend/src/App.tsx` and `frontend/src/api/client.ts`.
+- [x] **T-034**: Debug diagnostics panel — togglable developer drawer showing request_id, model_version, feature_version, raw model score, priority adjustments, normalized score, and eligibility notes, in `frontend/src/App.tsx`.
+- [x] **Wave 4 tests**: Added frontend unit tests in `frontend/tests/api_helpers.test.ts` covering category mapping and eligibility check helper logic; all tests pass.
+- [x] **T-041**: Structured backend logging — upgraded `backend/app/core/logging.py` to JSON structured logs with request-scoped context (`request_id`, `correlation_id`) and required model fields (`model_version`, `feature_version`, `event_type`), then instrumented ranking/feedback services and HTTP middleware for consistent event logs.
+- [x] **T-042**: Product metrics — added stored impression events on rank responses, persisted enriched feedback events, and exposed `GET /api/v1/feedback/metrics` aggregating impressions, feedback volume, and accept/dismiss proxy counters from JSONL events; added backend test coverage.
+- [x] **T-040**: Reviewer audit → output/reports/review_summary.md (boundary drift, duration leakage, no training in routes)
+- [x] **T-043**: Verify/enhance ML run manifest in ml/artifacts/run_manifest.json
+- [x] **T-044**: Demo report markdown under output/reports/ — dataset, model, metrics, limitations, sample rankings
+- [x] **T-037**: Expanded FastAPI endpoint tests in `backend/tests/` for health/rank/sample-users/feedback with stronger request validation checks, response schema assertions, top-K guarantees, and model-artifact fallback behavior coverage.
+- [x] **T-035**: Data tests — added/verified tests for schema validation, preprocessing, pair generation in `ml/tests/test_data_pipeline.py` and `ml/tests/test_synthetic.py`.
+- [x] **T-036**: ML tests — added/verified tests for feature generation, training smoke path, evaluation output structure in `ml/tests/test_features.py`, `ml/tests/test_training.py`, and `ml/tests/test_evaluation.py`.
+- [x] **T-038**: Frontend tests — rendering, user selection, API interaction, feedback fully covered with 6 core Vitest unit tests in `frontend/tests/App.test.tsx`.
+- [x] **T-039**: One end-to-end integration test — completed real-world end-to-end flow coverage (sample user -> rank -> feedback) with fallback mock/live modes in `frontend/tests/integration.test.ts`.
+- [x] **T-050**: README completion (Updated README.md with overview, architecture, setup, dataset attribution, demo flow, and limitations).
+- [x] **T-051**: Model card (Created docs/model_card.md documenting intended use, training data, excluded duration, metrics, and synthetic label caveats).
+- [x] **T-052**: Runbook (Created docs/runbook.md with developer guidelines for setup, training, inference, UI startup, testing, and failure modes).
+- [x] **T-053**: Architecture decision records (Created 4 ADRs under docs/adr/ for model choice, feedback storage, frontend architecture, and LLM deferral).
+- [x] **Docs**: Added `docs/install-local.md` and `docs/install-aws.md` with step-by-step installation instructions for local and AWS environments.
+- [x] **T-045**: Backend CI workflow — `.github/workflows/backend-ci.yml` runs Ruff lint, Mypy type-check, and pytest on path-filtered backend/shared changes.
+- [x] **T-046**: Frontend CI workflow — `.github/workflows/frontend-ci.yml` runs ESLint and Vitest on path-filtered frontend changes.
+- [x] **T-047**: ML CI workflow — `.github/workflows/ml-ci.yml` runs ML smoke tests and `scripts/check_ml_artifacts.py` on path-filtered ml/shared/data changes.
+- [x] **T-048**: Monorepo path filters — each workflow uses `paths` filters so backend, frontend, and ML jobs skip unrelated directory changes.
+- [x] **T-049**: Local quality gate — `scripts/quality.sh` and `npm run quality` run core lint, type-check, and test checks; optional `.pre-commit-config.yaml` for staged Python hooks.

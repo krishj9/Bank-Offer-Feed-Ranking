@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Synthetic Bank Offer Schema",
+  "description": "Schema contract for synthetic bank offers used in the Bank Offer Feed Ranking project. Defines the structure of an offer and its versioning.",
+  "type": "object",
+  "properties": {
+    "offer_id": {
+      "type": "string",
+      "description": "Unique identifier for the offer."
+    },
+    "offer_type": {
+      "type": "string",
+      "description": "The specific type of the offer (e.g., 'term_deposit_reminder', 'credit_card_upgrade')."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short, human-readable title of the offer."
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the offer."
+    },
+    "category": {
+      "type": "string",
+      "description": "Product category of the offer (e.g., 'savings', 'credit', 'advice')."
+    },
+    "priority_weight": {
+      "type": "number",
+      "description": "Business priority weight used during reranking (e.g., 1.0 is default)."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Flag indicating if the offer is active and can be served."
+    },
+    "eligibility_rules": {
+      "type": "object",
+      "description": "Structured rule set defining customer eligibility (e.g., {'min_age': 25, 'job_types': ['admin.']}). Can also contain expression strings."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version tag for the offer definition, useful for tracking changes over time."
+    }
+  },
+  "required": [
+    "offer_id",
+    "offer_type",
+    "title",
+    "description",
+    "category",
+    "priority_weight",
+    "active",
+    "eligibility_rules",
+    "version"
+  ]
+}
