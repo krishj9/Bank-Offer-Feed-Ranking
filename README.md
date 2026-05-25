@@ -16,7 +16,7 @@ The system is built as a modular monorepo separated into seven logical layers:
 ## Setup Instructions
 Please refer to the following guides for detailed setup, training, inference, and UI startup instructions:
 - [Local Installation Guide](docs/install-local.md) - Run the full app locally.
-- [AWS Deployment Guide](docs/install-aws.md) - Practical AWS deployment pattern.
+- [AWS Deployment Guide](docs/install-aws.md) - EC2 (stop when idle) or serverless (S3 + CloudFront + Lambda) deployment.
 - [Developer Runbook](docs/runbook.md) - Deep dive into developer commands and workflows.
 
 ## Dataset Attribution

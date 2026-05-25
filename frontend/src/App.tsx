@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Award,
   AlertTriangle,
-  Flame
+  Flame,
+  BookOpen
 } from 'lucide-react';
 import { apiClient, getCategoryDisplay, getEligibilityNotes, MOCK_OFFERS } from './api/client';
 import type { UserProfile, RankedOffer, RankResponse, HealthResponse } from './api/client';
@@ -239,6 +240,18 @@ function App() {
                 {rankingData?.model_version || 'N/A'}
               </span>
             </div>
+
+            {/* ML Architecture docs link */}
+            <a
+              href="/docs/ml_architecture.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open ML Architecture &amp; Design documentation"
+              className="hidden sm:inline-flex items-center px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:bg-slate-100 hover:border-blue-300 hover:text-blue-700 transition-colors shadow-sm cursor-pointer"
+            >
+              <BookOpen className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
+              ML Architecture
+            </a>
 
             {/* Mode switch */}
             <div className="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">

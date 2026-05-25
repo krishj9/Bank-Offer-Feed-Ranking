@@ -1,0 +1,2135 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Bank Offer Feed Ranking — ML Architecture &amp; Design</title>
+    <meta
+      name="description"
+      content="State-of-the-art architecture and design documentation for the Bank Offer Feed Ranking monorepo: ML pipelines, FastAPI backend, React experience layer, and supporting infrastructure."
+    />
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"
+    />
+
+    <style>
+      :root {
+        --bg: #0b1020;
+        --bg-elev: #121933;
+        --bg-elev-2: #1a2347;
+        --border: #25305a;
+        --text: #e7ecff;
+        --text-dim: #9aa6cf;
+        --text-mute: #6c7aa8;
+        --accent: #5b8cff;
+        --accent-2: #7dd3fc;
+        --accent-3: #a78bfa;
+        --success: #34d399;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        --code-bg: #0f1530;
+        --code-border: #1f2a55;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --radius: 14px;
+        --radius-sm: 8px;
+        --max-w: 1240px;
+        --sidebar-w: 290px;
+        --header-h: 64px;
+        --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial,
+          sans-serif;
+      }
+
+      :root[data-theme="light"] {
+        --bg: #f6f8fd;
+        --bg-elev: #ffffff;
+        --bg-elev-2: #eef2fb;
+        --border: #d8def0;
+        --text: #14213d;
+        --text-dim: #4b587c;
+        --text-mute: #6c7aa8;
+        --accent: #2d5cff;
+        --accent-2: #0284c7;
+        --accent-3: #7c3aed;
+        --success: #047857;
+        --warning: #b45309;
+        --danger: #b91c1c;
+        --code-bg: #0f1530;
+        --code-border: #1f2a55;
+        --shadow: 0 10px 24px rgba(20, 33, 61, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: calc(var(--header-h) + 16px);
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: radial-gradient(
+            1200px 600px at 80% -10%,
+            rgba(91, 140, 255, 0.12),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 500px at -10% 20%,
+            rgba(167, 139, 250, 0.1),
+            transparent 60%
+          ),
+          var(--bg);
+        color: var(--text);
+        line-height: 1.65;
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      code,
+      pre {
+        font-family: var(--mono);
+        font-size: 13.5px;
+      }
+
+      code:not(pre code) {
+        background: var(--bg-elev-2);
+        color: var(--accent-2);
+        border: 1px solid var(--border);
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-size: 0.88em;
+        white-space: nowrap;
+      }
+
+      pre[class*="language-"] {
+        background: var(--code-bg) !important;
+        border: 1px solid var(--code-border) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 16px 18px !important;
+        overflow: auto;
+        font-size: 13px;
+        line-height: 1.55;
+        margin: 14px 0;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      /* ============== TOP READING-PROGRESS BAR ============== */
+      .progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: transparent;
+        z-index: 60;
+        pointer-events: none;
+      }
+      .progress-bar__fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--accent), var(--accent-3));
+        transition: width 80ms linear;
+      }
+
+      /* ============== HEADER ============== */
+      header.site {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        height: var(--header-h);
+        backdrop-filter: saturate(140%) blur(10px);
+        background: color-mix(in srgb, var(--bg) 75%, transparent);
+        border-bottom: 1px solid var(--border);
+      }
+      .site__inner {
+        max-width: var(--max-w);
+        height: 100%;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+      .brand__mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-3));
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+      }
+      .brand__mark svg {
+        width: 20px;
+        height: 20px;
+        color: white;
+      }
+      .brand__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .brand__title {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .brand__sub {
+        font-size: 11px;
+        color: var(--text-mute);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn {
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text);
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: transform 80ms ease, background 120ms ease, border-color 120ms ease;
+      }
+      .btn:hover {
+        border-color: var(--accent);
+        background: var(--bg-elev-2);
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn--ghost {
+        background: transparent;
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .mobile-toc-toggle {
+        display: none;
+      }
+
+      /* ============== LAYOUT ============== */
+      .layout {
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 24px 20px 80px;
+        display: grid;
+        grid-template-columns: var(--sidebar-w) 1fr;
+        gap: 36px;
+        align-items: start;
+      }
+
+      /* ============== SIDEBAR / TOC ============== */
+      aside.toc {
+        position: sticky;
+        top: calc(var(--header-h) + 24px);
+        align-self: start;
+        max-height: calc(100vh - var(--header-h) - 48px);
+        overflow: auto;
+        padding-right: 8px;
+      }
+      .toc__title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        color: var(--text-mute);
+        margin: 0 0 12px 4px;
+      }
+      .toc__progress-track {
+        position: relative;
+        height: 4px;
+        background: var(--bg-elev-2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        margin: 0 4px 16px;
+        overflow: hidden;
+      }
+      .toc__progress-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0;
+        background: linear-gradient(90deg, var(--accent), var(--accent-3));
+        transition: width 80ms linear;
+      }
+      .toc ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .toc li {
+        margin: 0;
+      }
+      .toc a {
+        display: block;
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        color: var(--text-dim);
+        border-left: 2px solid transparent;
+        transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+        text-decoration: none;
+      }
+      .toc a:hover {
+        color: var(--text);
+        background: var(--bg-elev);
+      }
+      .toc a.active {
+        color: var(--text);
+        background: var(--bg-elev);
+        border-left-color: var(--accent);
+      }
+      .toc .toc-h3 {
+        padding-left: 22px;
+        font-size: 12.5px;
+        color: var(--text-mute);
+      }
+      .toc .toc-h3.active {
+        color: var(--text-dim);
+      }
+
+      /* ============== MAIN ============== */
+      main.content {
+        min-width: 0;
+      }
+      .hero {
+        margin-bottom: 28px;
+        padding: 26px 28px;
+        border-radius: var(--radius);
+        background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--accent) 18%, transparent),
+            transparent 60%
+          ),
+          var(--bg-elev);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+      }
+      .hero h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        line-height: 1.2;
+        letter-spacing: -0.3px;
+      }
+      .hero p.lede {
+        margin: 0 0 14px;
+        color: var(--text-dim);
+        font-size: 15px;
+        max-width: 70ch;
+      }
+      .pillset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        border-radius: 999px;
+        background: var(--bg-elev-2);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+      }
+      .pill .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-2);
+      }
+
+      section.section {
+        margin: 38px 0 0;
+        padding-top: 8px;
+      }
+      section.section h2 {
+        font-size: 22px;
+        letter-spacing: -0.2px;
+        margin: 0 0 6px;
+        scroll-margin-top: calc(var(--header-h) + 16px);
+      }
+      section.section > p.section-sub {
+        color: var(--text-dim);
+        margin: 0 0 18px;
+      }
+      section.section h3 {
+        font-size: 17px;
+        margin: 28px 0 8px;
+        color: var(--text);
+        scroll-margin-top: calc(var(--header-h) + 16px);
+      }
+      section.section h4 {
+        font-size: 14px;
+        margin: 18px 0 6px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      section.section p {
+        margin: 8px 0;
+        color: var(--text-dim);
+      }
+      section.section strong {
+        color: var(--text);
+      }
+
+      ul.bul,
+      ol.bul {
+        padding-left: 22px;
+        color: var(--text-dim);
+      }
+      ul.bul li,
+      ol.bul li {
+        margin: 4px 0;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+      @media (max-width: 880px) {
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+      }
+      .card h4 {
+        margin: 0 0 8px;
+        color: var(--text);
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 14.5px;
+      }
+      .card p,
+      .card li {
+        font-size: 13.5px;
+        color: var(--text-dim);
+      }
+
+      .callout {
+        margin: 18px 0;
+        padding: 14px 16px 14px 18px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        position: relative;
+      }
+      .callout::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 4px 0 0 4px;
+        background: var(--accent);
+      }
+      .callout--takeaway::before {
+        background: linear-gradient(180deg, var(--accent), var(--accent-3));
+      }
+      .callout--concept::before {
+        background: linear-gradient(180deg, var(--accent-2), var(--success));
+      }
+      .callout--warning::before {
+        background: linear-gradient(180deg, var(--warning), var(--danger));
+      }
+      .callout__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: var(--text-mute);
+        margin-bottom: 6px;
+      }
+      .callout__label .marker {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .callout--takeaway .marker {
+        background: var(--accent-3);
+      }
+      .callout--concept .marker {
+        background: var(--success);
+      }
+      .callout--warning .marker {
+        background: var(--warning);
+      }
+      .callout ul {
+        margin: 6px 0 0;
+        padding-left: 20px;
+        color: var(--text-dim);
+      }
+      .callout strong {
+        color: var(--text);
+      }
+
+      table.spec {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 18px;
+        font-size: 13.5px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+      table.spec th,
+      table.spec td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-dim);
+        vertical-align: top;
+      }
+      table.spec th {
+        background: var(--bg-elev-2);
+        color: var(--text);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+      }
+      table.spec tr:last-child td {
+        border-bottom: none;
+      }
+      table.spec td code {
+        white-space: nowrap;
+      }
+
+      /* ============== DIAGRAMS ============== */
+      .diagram {
+        margin: 18px 0 8px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        border-radius: var(--radius);
+        overflow: auto;
+      }
+      .diagram-caption {
+        font-size: 12px;
+        color: var(--text-mute);
+        margin: -2px 0 18px;
+        text-align: center;
+        letter-spacing: 0.4px;
+      }
+      .mermaid {
+        background: transparent !important;
+        text-align: center;
+      }
+      svg.flow {
+        width: 100%;
+        max-width: 920px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+      }
+
+      hr.sep {
+        border: none;
+        border-top: 1px dashed var(--border);
+        margin: 32px 0;
+      }
+
+      footer.site-footer {
+        max-width: var(--max-w);
+        margin: 40px auto 0;
+        padding: 24px 20px;
+        border-top: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 12.5px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      footer.site-footer a {
+        color: var(--text-dim);
+      }
+
+      /* ============== MOBILE ============== */
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        aside.toc {
+          position: fixed;
+          inset: var(--header-h) auto 0 0;
+          width: 84%;
+          max-width: 320px;
+          background: var(--bg);
+          border-right: 1px solid var(--border);
+          padding: 18px 14px;
+          transform: translateX(-105%);
+          transition: transform 220ms ease;
+          z-index: 55;
+          max-height: none;
+          height: calc(100vh - var(--header-h));
+        }
+        aside.toc.open {
+          transform: translateX(0);
+        }
+        .mobile-toc-toggle {
+          display: inline-flex;
+        }
+        .hero h1 {
+          font-size: 24px;
+        }
+      }
+
+      @media print {
+        header.site,
+        aside.toc,
+        .progress-bar,
+        .mobile-toc-toggle,
+        .actions {
+          display: none !important;
+        }
+        body {
+          background: white;
+          color: black;
+        }
+        .layout {
+          display: block;
+          padding: 0;
+        }
+        .card,
+        .callout,
+        .diagram {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress-bar" aria-hidden="true">
+      <div class="progress-bar__fill" id="progress-fill"></div>
+    </div>
+
+    <header class="site" role="banner">
+      <div class="site__inner">
+        <div class="brand">
+          <div class="brand__mark" aria-hidden="true">
+            <!-- Layered chart icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l4-4 4 4 5-6" />
+            </svg>
+          </div>
+          <div class="brand__text">
+            <span class="brand__title">Bank Offer Feed Ranking</span>
+            <span class="brand__sub">ML Architecture &amp; Design · v1</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn mobile-toc-toggle" id="tocToggle" aria-label="Toggle table of contents">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="14" y2="18" />
+            </svg>
+            <span>Sections</span>
+          </button>
+          <a class="btn btn--ghost" href="/" aria-label="Back to app">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+            <span>Back to app</span>
+          </a>
+          <button class="btn" id="themeToggle" aria-label="Toggle color theme">
+            <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+            </svg>
+            <span id="themeLabel">Light</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="toc" id="toc" aria-label="Table of contents">
+        <div class="toc__title">On this page</div>
+        <div class="toc__progress-track" aria-hidden="true">
+          <div class="toc__progress-fill" id="toc-progress"></div>
+        </div>
+        <ul id="toc-list"></ul>
+      </aside>
+
+      <main class="content" id="content">
+        <div class="hero">
+          <h1>Bank Offer Feed Ranking — ML Architecture &amp; Design</h1>
+          <p class="lede">
+            A learning-oriented, code-grounded architecture reference for a production-aligned ML
+            application that ranks personalized bank offers in a feed-style UI. This document maps
+            every stage of the pipeline — from raw UCI Bank Marketing CSV ingestion to a
+            FastAPI-served ranking response consumed by a React SPA — to the actual modules, files,
+            and contracts in this repository.
+          </p>
+          <div class="pillset">
+            <span class="pill"><span class="dot"></span>FastAPI · Pydantic v2</span>
+            <span class="pill"><span class="dot"></span>scikit-learn · HistGradientBoosting</span>
+            <span class="pill"><span class="dot"></span>pandas · pyarrow · joblib</span>
+            <span class="pill"><span class="dot"></span>React 19 · Vite · Tailwind v4</span>
+            <span class="pill"><span class="dot"></span>JSONL feedback store</span>
+            <span class="pill"><span class="dot"></span>GitHub Actions CI</span>
+          </div>
+        </div>
+
+        <!-- ====== A. EXECUTIVE OVERVIEW ====== -->
+        <section class="section" id="overview" data-toc-title="A. Executive Overview">
+          <h2>A. Executive Overview</h2>
+          <p class="section-sub">
+            What this system solves, and how every layer fits together.
+          </p>
+
+          <h3 id="overview-problem">A.1 Problem &amp; product framing</h3>
+          <p>
+            The repository implements a <strong>personalized ranking system</strong> over a
+            synthetic banking feed. Given a customer profile, it returns a top-K list of offers
+            (term deposit reminder, savings boost, credit card upgrade, refinance prompt, advisor
+            callback), each with a model score, normalized score, deterministic explanation, and
+            full provenance (request, model, and feature versions). The product framing reframes a
+            classic binary classification problem (UCI Bank Marketing
+            <code>bank-additional-full.csv</code>) into a ranking + recommendation pattern, while
+            preserving rigorous engineering practices: leakage controls, training/serving feature
+            parity, contract-driven module boundaries, structured observability, and a JSONL
+            feedback loop for future retraining.
+          </p>
+
+          <h3 id="overview-layers">A.2 Seven-layer architecture at a glance</h3>
+          <p>
+            The codebase organizes responsibility into seven explicit layers defined in
+            <code>specs/design.md</code>, each owned by a distinct directory:
+          </p>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Layer</th>
+                <th>Primary directories</th>
+                <th>Responsibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Data</td>
+                <td><code>ml/data/</code>, <code>shared/contracts/</code></td>
+                <td>Load, validate, normalize raw UCI CSV; emit cleaned Parquet artifacts.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Synthetic Scenario</td>
+                <td><code>ml/data/offers.py</code>, <code>pairs.py</code>, <code>labels.py</code></td>
+                <td>Generate offer catalog, user-offer candidates, and deterministic labels.</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Feature</td>
+                <td><code>ml/features/builder.py</code></td>
+                <td>One <code>FeatureBuilder</code> shared between training and inference.</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Model</td>
+                <td><code>ml/training/</code>, <code>ml/evaluation/</code></td>
+                <td>Train <code>HistGradientBoostingClassifier</code>, save artifacts, compute metrics.</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>Ranking Application</td>
+                <td><code>backend/app/services/</code></td>
+                <td>Candidate selection, scoring, reranking, explanation.</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>Experience</td>
+                <td><code>backend/app/api/</code>, <code>frontend/src/</code></td>
+                <td>FastAPI HTTP surface + React SPA feed and feedback UI.</td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>Observability &amp; Delivery</td>
+                <td>
+                  <code>backend/app/core/logging.py</code>, <code>.github/workflows/</code>,
+                  <code>scripts/</code>
+                </td>
+                <td>Structured JSON logs, JSONL feedback store, three CI workflows, quality gate.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 id="overview-glance">A.3 System at a glance</h3>
+          <div class="diagram">
+            <div class="mermaid">
+flowchart LR
+  classDef src fill:#1a2347,stroke:#5b8cff,color:#e7ecff
+  classDef data fill:#0f1530,stroke:#7dd3fc,color:#e7ecff
+  classDef ml fill:#1a2347,stroke:#a78bfa,color:#e7ecff
+  classDef svc fill:#0f1530,stroke:#34d399,color:#e7ecff
+  classDef ui  fill:#1a2347,stroke:#fbbf24,color:#e7ecff
+
+  A["UCI Bank Marketing CSV<br/>bank-additional-full.csv"]:::src
+  B["ml.data.run_pipeline<br/>validate · preprocess · sample"]:::data
+  C["ml.data.run_synthetic<br/>offers · pairs · labels"]:::data
+  D["FeatureBuilder<br/>(ml/features/builder.py)"]:::ml
+  E["ml.training.run_pipeline<br/>HistGradientBoosting"]:::ml
+  F["ml/artifacts/<br/>baseline_model.joblib<br/>preprocessor.json<br/>run_manifest.json"]:::ml
+  G["FastAPI · /api/v1/rank<br/>backend/app"]:::svc
+  H["React SPA<br/>NovaBank Offer Feed"]:::ui
+  I["JSONL feedback store<br/>data/processed/feedback_events.jsonl"]:::data
+
+  A --> B --> C --> D --> E --> F
+  D -. shared at serve time .-> G
+  F --> G --> H
+  H -- impressions + feedback --> G --> I
+  I -. future retraining .-> C
+            </div>
+            <div class="diagram-caption">Figure 1 · End-to-end system: ingestion → training → serving → UI → feedback loop</div>
+          </div>
+
+          <div class="callout callout--takeaway">
+            <div class="callout__label"><span class="marker"></span>Key takeaway</div>
+            <p>
+              Every layer in this system is wired with <strong>explicit contracts</strong> (JSON
+              schemas, Pydantic models, and a versioned run manifest) instead of implicit
+              conventions. That is what enables independent module ownership, training-serving
+              feature parity, and graceful degradation when artifacts are missing.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== B. ML PIPELINE OVERVIEW ====== -->
+        <section class="section" id="ml-pipeline" data-toc-title="B. ML Pipeline (End-to-End)">
+          <h2>B. ML Pipeline Overview (End-to-End)</h2>
+          <p class="section-sub">
+            The complete offline lifecycle: ingestion → preprocessing → synthetic scenarios →
+            features → training → evaluation → artifact packaging.
+          </p>
+
+          <h3 id="ml-stages">B.1 Lifecycle stages mapped to code</h3>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>Stage</th>
+                <th>Entry point</th>
+                <th>Inputs</th>
+                <th>Outputs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ingestion &amp; validation</td>
+                <td><code>ml/data/run_pipeline.py</code></td>
+                <td><code>data/raw/bank-additional-full.csv</code></td>
+                <td>
+                  <code>data/processed/bank_processed.parquet</code>,
+                  <code>output/reports/validation_summary.json</code>,
+                  <code>output/reports/preprocessing_summary.json</code>,
+                  <code>data/processed/sample_users.json</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Synthetic scenarios</td>
+                <td><code>ml/data/run_synthetic.py</code></td>
+                <td>processed users + offer rules</td>
+                <td>
+                  <code>data/synthetic/offers.csv</code>,
+                  <code>data/synthetic/user_offer_pairs.parquet</code>,
+                  <code>output/reports/pair_generation_report.json</code>,
+                  <code>output/reports/label_generation_report.json</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Feature build</td>
+                <td><code>ml/features/builder.py</code></td>
+                <td>schema + merged DataFrame</td>
+                <td>typed, deterministic feature matrix</td>
+              </tr>
+              <tr>
+                <td>Train + eval</td>
+                <td><code>ml/training/run_pipeline.py</code></td>
+                <td>features + labels</td>
+                <td>
+                  <code>ml/artifacts/baseline_model.joblib</code>,
+                  <code>preprocessor.json</code>,
+                  <code>run_manifest.json</code>,
+                  <code>output/metrics/evaluation_metrics.json</code>,
+                  <code>output/reports/evaluation_report.json</code>,
+                  <code>output/reports/split_report.json</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Inference handoff</td>
+                <td><code>backend/app/core/model_loader.py</code></td>
+                <td>manifest + serialized model</td>
+                <td>in-process <code>HistGradientBoostingClassifier</code> ready for scoring</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 id="ml-flow">B.2 Detailed offline flow</h3>
+          <div class="diagram">
+            <div class="mermaid">
+flowchart TB
+  classDef io   fill:#0f1530,stroke:#7dd3fc,color:#e7ecff
+  classDef step fill:#1a2347,stroke:#5b8cff,color:#e7ecff
+  classDef art  fill:#1a2347,stroke:#a78bfa,color:#e7ecff
+
+  RAW["data/raw/bank-additional-full.csv<br/>(UCI, ; delimited)"]:::io
+  L["ml/data/loaders.py<br/>load_raw_bank_data"]:::step
+  V["ml/data/validation.py<br/>validate_raw_data + summary"]:::step
+  P["ml/data/preprocess.py<br/>drop duration · lower/strip · y→0/1"]:::step
+  S["ml/data/sample_users.py<br/>extract_sample_users(n=10)"]:::step
+  OUTPROC["data/processed/bank_processed.parquet"]:::art
+  SAMPLES["data/processed/sample_users.json"]:::art
+
+  OFRS["ml/data/offers.py<br/>generate_offers() · 5 types"]:::step
+  PAIRS["ml/data/pairs.py + eligibility.py<br/>generate_user_offer_pairs"]:::step
+  LBL["ml/data/labels.py<br/>deterministic + 5% hash noise"]:::step
+  OUTPAIRS["data/synthetic/user_offer_pairs.parquet"]:::art
+  OUTOFR["data/synthetic/offers.csv"]:::art
+
+  FB["ml/features/builder.py<br/>FeatureBuilder.build_features(is_training=True)"]:::step
+  SP["ml/training/split.py<br/>GroupShuffleSplit(group=user_id)"]:::step
+  TR["ml/training/train.py<br/>HistGradientBoostingClassifier"]:::step
+  EV["ml/evaluation/evaluate.py<br/>AUC · log loss · P@K · R@K · MAP@K · NDCG@K"]:::step
+  ART["ml/artifacts/<br/>baseline_model.joblib<br/>preprocessor.json<br/>run_manifest.json"]:::art
+  MET["output/metrics/evaluation_metrics.json<br/>output/reports/*.json"]:::art
+
+  RAW --> L --> V --> P --> OUTPROC
+  P --> S --> SAMPLES
+  OUTPROC --> OFRS --> OUTOFR
+  OUTPROC --> PAIRS --> OUTPAIRS
+  OUTPAIRS --> LBL --> OUTPAIRS
+  OUTPROC --> FB
+  OUTPAIRS --> FB --> SP --> TR --> ART
+  TR --> EV --> MET
+            </div>
+            <div class="diagram-caption">Figure 2 · Offline data &amp; training pipeline</div>
+          </div>
+
+          <h3 id="ml-runbook">B.3 Reproducible runbook</h3>
+          <p>The full offline pipeline is executed via three module entrypoints (as defined in <code>docs/runbook.md</code> and <code>docs/install-local.md</code>):</p>
+          <pre><code class="language-bash"># 1. Validate, preprocess, and extract sample users.
+uv run python -m ml.data.run_pipeline
+
+# 2. Generate offers, eligible pairs, and synthetic labels.
+uv run python -m ml.data.run_synthetic
+
+# 3. Train baseline ranker, evaluate, and persist artifacts.
+uv run python -m ml.training.run_pipeline \
+  --users  data/processed/bank_processed.parquet \
+  --offers data/synthetic/offers.csv \
+  --pairs  data/synthetic/user_offer_pairs.parquet \
+  --schema shared/contracts/feature_schema.json</code></pre>
+
+          <div class="callout callout--concept">
+            <div class="callout__label"><span class="marker"></span>Concept · Decision-time features</div>
+            <p>
+              The UCI <code>duration</code> field is recorded <em>after</em> the call ends, so it
+              perfectly predicts conversion but is unavailable at decision time. The pipeline
+              enforces this exclusion in three independent places — the data schema
+              (<code>shared/contracts/bank_data_schema.json</code> with a <code>leakage_note</code>),
+              the preprocess step (<code>ml/data/preprocess.py</code>), and the feature builder
+              (<code>ml/features/builder.py</code>) — so a typo in one place still cannot leak the
+              feature into training or serving.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== C. DATA ENGINEERING ====== -->
+        <section class="section" id="data" data-toc-title="C. Data Engineering &amp; Features">
+          <h2>C. Data Engineering &amp; Feature Layer</h2>
+          <p class="section-sub">
+            How raw bytes become typed, leakage-safe, training-serving-consistent features.
+          </p>
+
+          <h3 id="data-ingest">C.1 Ingestion &amp; schema enforcement</h3>
+          <p>
+            <code>ml/data/loaders.load_raw_bank_data</code> reads the semicolon-separated UCI CSV
+            into a pandas DataFrame. <code>ml/data/validation.validate_raw_data</code> then loads
+            the JSON Schema contract in <code>shared/contracts/bank_data_schema.json</code> and
+            asserts:
+          </p>
+          <ul class="bul">
+            <li>All required columns (21 expected fields) are present.</li>
+            <li>The target column <code>y</code> contains no nulls.</li>
+            <li>
+              Light dtype consistency checks (integer/number) emit warnings without crashing the
+              pipeline (defensive ingestion).
+            </li>
+          </ul>
+          <p>The schema contract is the canonical source of truth and embeds the leakage policy:</p>
+          <pre><code class="language-json">{
+  "default": {
+    "target": "y",
+    "excluded_fields": ["duration"],
+    "leakage_note": "CRITICAL: The 'duration' field MUST be excluded by default from modeling. ...",
+    "required_columns": [
+      { "name": "age", "type": "integer" },
+      { "name": "job", "type": "string" },
+      { "name": "duration", "type": "integer" },
+      { "name": "campaign", "type": "integer" },
+      { "name": "euribor3m", "type": "number" },
+      { "name": "y", "type": "string" }
+    ]
+  }
+}</code></pre>
+
+          <h3 id="data-preprocess">C.2 Preprocessing &amp; standardization</h3>
+          <p>
+            <code>ml/data/preprocess.preprocess_data</code> performs four deterministic
+            transformations:
+          </p>
+          <ol class="bul">
+            <li><strong>Excludes leakage fields</strong> (<code>duration</code> by default).</li>
+            <li><strong>Normalizes categoricals</strong>: <code>.str.lower().str.strip()</code> on
+              every object column (UCI uses inconsistent casing and whitespace).</li>
+            <li><strong>Standardizes column names</strong>: replaces <code>.</code> with
+              <code>_</code> so <code>emp.var.rate</code> becomes <code>emp_var_rate</code>, which
+              is also how the Pydantic schema <code>SampleUserProfile</code> models the field.</li>
+            <li><strong>Maps target</strong>: <code>y</code> becomes <code>1</code> / <code>0</code>
+              from <code>"yes"</code> / <code>"no"</code>.</li>
+          </ol>
+          <p>
+            Cleaned data is persisted as Parquet for type fidelity and columnar reads, and a
+            preprocessing summary is written to <code>output/reports/preprocessing_summary.json</code>
+            for reproducibility (FR-005 in <code>specs/requirements.md</code>).
+          </p>
+
+          <h3 id="data-synth">C.3 Synthetic scenario generation</h3>
+          <p>The "rankable problem" is constructed on top of the cleaned dataset:</p>
+          <ul class="bul">
+            <li>
+              <strong>Offer catalog</strong> — <code>ml/data/offers.py</code> emits 5 typed offers
+              (term deposit reminder, savings boost, credit card upgrade, refinance prompt, advisor
+              callback) with structured <code>eligibility_rules</code> serialized as JSON strings
+              into CSV.
+            </li>
+            <li>
+              <strong>Eligibility engine</strong> — <code>ml/data/eligibility.check_eligibility</code>
+              is a pure function that takes a user dict + offer dict, evaluates rules
+              (<code>min_age</code>, <code>max_age</code>, <code>exclude_jobs</code>,
+              <code>marital</code>, <code>education</code>, <code>housing</code>,
+              <code>loan</code>), and returns <code>(is_eligible, reasons[])</code>. It is reused
+              identically at serve time by <code>backend/app/services/candidate_service.py</code>.
+            </li>
+            <li>
+              <strong>Pair generation</strong> — <code>ml/data/pairs.generate_user_offer_pairs</code>
+              produces every eligible (user, offer) pair and reports coverage to
+              <code>output/reports/pair_generation_report.json</code>.
+            </li>
+            <li>
+              <strong>Deterministic labels</strong> — <code>ml/data/labels.generate_synthetic_labels</code>
+              applies offer-specific heuristics (e.g., <em>credit card upgrade is positive for
+              management/entrepreneur/admin/technician with no default</em>) overlaid with hard
+              negatives (campaign fatigue, credit default for credit offers) and a 5% hash-based
+              deterministic flip for realism. The full assumption list is exported to
+              <code>output/reports/label_generation_report.json</code> so reviewers know exactly
+              what the model is being asked to learn.
+            </li>
+          </ul>
+
+          <h3 id="data-features">C.4 The shared <code>FeatureBuilder</code> (training-serving parity)</h3>
+          <p>
+            The feature contract in <code>shared/contracts/feature_schema.json</code> declares four
+            groups under <code>"default"</code>: <code>user_features</code> (17),
+            <code>offer_features</code> (4), <code>user_offer_features</code> (2),
+            <code>context_features</code> (2), plus an explicit <code>label</code> and
+            <code>excluded_features: ["duration"]</code>.
+          </p>
+          <p>
+            <code>FeatureBuilder.build_features(df, is_training=...)</code> is the single
+            entrypoint used by training, evaluation, and the live ranking service. It enforces:
+          </p>
+          <ul class="bul">
+            <li>Deterministic column ordering (so the model sees the same schema layout offline and online).</li>
+            <li>Strict missing-column detection (raises <code>ValueError</code> on missing inputs).</li>
+            <li>
+              Type coercion by group: <code>numerical</code> → <code>pd.to_numeric(...).fillna(0.0)</code>,
+              <code>categorical</code> → <code>fillna("missing").astype(str)</code>, <code>boolean</code> → <code>astype(bool)</code>.
+            </li>
+            <li>
+              Hard removal of any <code>excluded_features</code> that sneak in — a defense in depth
+              for <code>duration</code>.
+            </li>
+            <li>Label inclusion controlled by the <code>is_training</code> flag.</li>
+          </ul>
+
+          <div class="callout callout--concept">
+            <div class="callout__label"><span class="marker"></span>Concept · Training-serving skew</div>
+            <p>
+              Skew happens when the offline feature pipeline differs (even subtly) from the online
+              one — different null fills, different category encodings, or different column orders.
+              Here, both paths import the <em>same</em> Python function with the <em>same</em>
+              schema file, eliminating skew by construction rather than by discipline.
+            </p>
+          </div>
+
+          <h3 id="data-no-fs">C.5 No external feature store (intentional V1 scope)</h3>
+          <p>
+            There is no Feast/Tecton/Redis feature store in V1 — this is explicit in
+            <code>specs/requirements.md</code> §10 ("Out of Scope: Feature store infrastructure")
+            and in ADR-0003. Instead, the system uses a <strong>shared feature module</strong>
+            (the <code>FeatureBuilder</code> + a versioned JSON schema), which solves the
+            consistency problem without the operational cost of a separate store. The
+            <code>preprocessor.json</code> artifact written next to the model is the serving-time
+            record of which schema generated the model.
+          </p>
+
+          <div class="callout callout--takeaway">
+            <div class="callout__label"><span class="marker"></span>Key takeaway</div>
+            <p>
+              A schema file + a shared Python function is the lowest-cost form of a feature store.
+              You get parity, versioning (via <code>preprocessor.json</code>), and contract checks
+              without standing up infrastructure. Treat this as the "Level 1" you grow out of when
+              real-time features and cross-team consumers arrive.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== D. MODEL ARCHITECTURE & TRAINING ====== -->
+        <section class="section" id="model" data-toc-title="D. Model &amp; Training">
+          <h2>D. Model Architecture &amp; Training</h2>
+          <p class="section-sub">
+            Why <code>HistGradientBoostingClassifier</code>, how it is trained, evaluated, and
+            packaged.
+          </p>
+
+          <h3 id="model-choice">D.1 Model choice and rationale</h3>
+          <p>
+            Per ADR-0001 (<code>docs/adr/0001-model-choice.md</code>), the baseline ranker is
+            <code>sklearn.ensemble.HistGradientBoostingClassifier</code>, used in a
+            <strong>point-wise</strong> formulation: each (user, offer) pair is a classification
+            sample, and ranking is induced at inference by sorting predicted probabilities per
+            user, then applying business reranking.
+          </p>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Choice</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Family</td>
+                <td>Histogram-based gradient-boosted trees</td>
+                <td>Strong on tabular + mixed types, native missing &amp; categorical support.</td>
+              </tr>
+              <tr>
+                <td>Loss</td>
+                <td><code>log_loss</code> (binary classification default)</td>
+                <td>Calibrated probabilities feed normalization &amp; reranking.</td>
+              </tr>
+              <tr>
+                <td>Hyperparameters</td>
+                <td>
+                  <code>max_iter=100</code>, <code>learning_rate=0.1</code>,
+                  <code>max_depth=6</code>, <code>random_state=42</code>
+                </td>
+                <td>Defined in <code>ml/training/run_pipeline.py</code> and echoed to the manifest.</td>
+              </tr>
+              <tr>
+                <td>Categorical handling</td>
+                <td>Native via <code>categorical_features</code> argument</td>
+                <td>Avoids one-hot blowup; columns set to <code>category</code> dtype before <code>fit</code>.</td>
+              </tr>
+              <tr>
+                <td>Serialization</td>
+                <td><code>joblib.dump → baseline_model.joblib</code></td>
+                <td>Stable scikit-learn artifact; loaded server-side without training imports.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 id="model-train">D.2 Training pipeline (<code>ml/training/</code>)</h3>
+          <p>
+            <code>ml/training/run_pipeline.main</code> wires the full offline run:
+          </p>
+          <ol class="bul">
+            <li>Load processed users (Parquet), synthetic offers (CSV), and labeled pairs (Parquet).</li>
+            <li>Three-way merge on <code>user_id ↔ id</code> and <code>offer_id</code>.</li>
+            <li>Normalize column aliases (<code>label → y</code>, <code>eligible → is_eligible</code>) and inject a default <code>affinity_score</code>.</li>
+            <li><strong>Group split</strong> via <code>ml/training/split.split_data</code> using <code>sklearn.model_selection.GroupShuffleSplit</code> with <code>group_col="user_id"</code> — a user appears strictly in train or val, never both.</li>
+            <li>Call <code>train_baseline_model</code>, which builds features through the shared <code>FeatureBuilder</code> and fits the classifier.</li>
+            <li>Persist artifacts and a run manifest, then evaluate on the validation split.</li>
+          </ol>
+
+          <h4>Pointwise scoring &amp; calibration</h4>
+          <p>For each candidate pair the model emits a probability:</p>
+          <pre><code class="language-python">model_score = model.predict_proba(X)[:, 1]   # P(positive | features)</code></pre>
+          <p>
+            At inference the <code>RankingService</code> normalizes these probabilities to
+            <code>[0, 1]</code> within a single request:
+          </p>
+          <pre><code class="language-python">normalized = (score - min(scores)) / (max(scores) - min(scores))   # within-request min-max</code></pre>
+          <p>
+            This is a per-request rescaling, not a calibration across requests. It supports a
+            stable visual sort and a downstream priority boost without altering relative order.
+          </p>
+
+          <div class="callout callout--concept">
+            <div class="callout__label"><span class="marker"></span>Concept · Point-wise vs. pair/listwise ranking</div>
+            <p>
+              Point-wise treats each (user, offer) as an independent classification, then sorts at
+              serve time. It is the simplest and cheapest formulation, and pairs cleanly with
+              rules-based reranking. The repo intentionally leaves room for pair-wise or
+              list-wise losses (e.g. NDCG-optimized) as a future iteration.
+            </p>
+          </div>
+
+          <h3 id="model-eval">D.3 Evaluation: classification + ranking</h3>
+          <p>
+            <code>ml/evaluation/evaluate.py</code> reports both kinds of metrics. Classification
+            metrics are global (<code>roc_auc_score</code>, <code>log_loss</code>); ranking metrics
+            are computed <em>per user</em>, then averaged.
+          </p>
+          <p>For each user group (sorted by <code>y_pred</code> desc, take top-K):</p>
+          <ul class="bul">
+            <li>
+              <strong>Precision@K</strong> = <code>(# positives in top-K) / K</code>
+            </li>
+            <li>
+              <strong>Recall@K</strong> = <code>(# positives in top-K) / total_positives_for_user</code>
+            </li>
+            <li>
+              <strong>MAP@K</strong> — average of running precision at each positive hit in top-K,
+              divided by <code>min(K, total_positives)</code>
+            </li>
+            <li>
+              <strong>NDCG@K</strong> = <code>DCG@K / IDCG@K</code> where
+              <code>DCG = Σ 1 / log2(rank + 2)</code> on positive labels.
+            </li>
+          </ul>
+          <p>Baseline numbers (committed in <code>docs/model_card.md</code>):</p>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>Family</th>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Classification</td><td>AUC</td><td><code>0.815</code></td></tr>
+              <tr><td>Classification</td><td>Log loss</td><td><code>0.271</code></td></tr>
+              <tr><td>Ranking @ K=3</td><td>Precision@3</td><td><code>0.089</code></td></tr>
+              <tr><td>Ranking @ K=3</td><td>Recall@3</td><td><code>0.106</code></td></tr>
+              <tr><td>Ranking @ K=3</td><td>MAP@3</td><td><code>0.110</code></td></tr>
+              <tr><td>Ranking @ K=3</td><td>NDCG@3</td><td><code>0.110</code></td></tr>
+            </tbody>
+          </table>
+
+          <h3 id="model-artifacts">D.4 Artifact packaging &amp; the run manifest</h3>
+          <p>
+            <code>ml/training/train.save_artifacts</code> writes three things side-by-side in
+            <code>ml/artifacts/</code>:
+          </p>
+          <pre><code class="language-json">{
+  "run_id": "run_YYYYMMDD_HHMMSS",
+  "timestamp": "2026-05-24T12:34:56",
+  "model_type": "HistGradientBoostingClassifier",
+  "hyperparameters": { "max_iter": 100, "learning_rate": 0.1, "max_depth": 6, "random_state": 42 },
+  "feature_names": ["age", "job", ..., "is_eligible", "affinity_score"],
+  "artifacts": {
+    "model": "ml/artifacts/baseline_model.joblib",
+    "preprocessor": "ml/artifacts/preprocessor.json"
+  },
+  "split_stats": { "train_rows": ..., "val_rows": ..., "grouped_by": "user_id" }
+}</code></pre>
+          <p>
+            <code>scripts/check_ml_artifacts.py</code> validates this manifest in CI: required keys,
+            artifact pointers, JSON validity of the preprocessor file, and existence (or
+            git-ignored absence) of the binary model.
+          </p>
+
+          <div class="callout callout--takeaway">
+            <div class="callout__label"><span class="marker"></span>Key takeaway</div>
+            <p>
+              <strong>Three artifacts always travel together</strong> — the binary model, the
+              feature schema snapshot, and the run manifest. The serving layer needs all three to
+              load successfully or it falls back. Treat them as one unit when copying to S3 or a
+              registry.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== E. INFERENCE PIPELINE ====== -->
+        <section class="section" id="inference" data-toc-title="E. Inference Pipeline">
+          <h2>E. Inference Pipeline (Real-Time)</h2>
+          <p class="section-sub">
+            FastAPI serving: synchronous, in-process, with deterministic fallback when artifacts
+            are missing. No batch inference is shipped in V1.
+          </p>
+
+          <h3 id="inference-flow">E.1 Request lifecycle</h3>
+          <div class="diagram">
+            <div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant UI as React SPA (App.tsx)
+  participant MW as FastAPI middleware<br/>(x-request-id · x-correlation-id)
+  participant API as POST /api/v1/rank<br/>(backend/app/api/rank.py)
+  participant CS as CandidateService
+  participant RS as RankingService
+  participant ML as ModelArtifactLoader<br/>+ HistGradientBoosting
+  participant RR as RerankService<br/>(rerank_config.json)
+  participant EX as ExplanationService
+  participant FS as FeedbackService<br/>(persist_impressions)
+
+  UI->>MW: POST /api/v1/rank { user_id, top_k }
+  MW->>API: request_id, correlation_id bound
+  API->>CS: resolve_user_profile + build_candidates
+  CS-->>API: list[CandidateOffer] (eligibility filtered)
+  API->>RS: rank_candidates(user, candidates, top_k)
+  RS->>ML: load(); FeatureBuilder.build_features(is_training=False)
+  ML-->>RS: model + preprocessor + manifest (or fallback)
+  RS->>RS: predict_proba · normalize · sort
+  RS->>RR: rerank(rows)
+  RR-->>RS: deduped · diversity-capped · priority-boosted
+  RS->>EX: safe_generate(user, offer)
+  EX-->>RS: deterministic explanation text
+  RS-->>API: RankResponse(top_k items)
+  API->>FS: persist_impressions(offer_ids)
+  API-->>UI: RankResponse JSON
+            </div>
+            <div class="diagram-caption">Figure 3 · Synchronous rank-request sequence</div>
+          </div>
+
+          <h3 id="inference-endpoints">E.2 API surface</h3>
+          <p>
+            <code>backend/app/main.py</code> bootstraps FastAPI with structured-logging middleware,
+            request-id / correlation-id binding, and three routers:
+          </p>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Schema (request → response)</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>GET</code></td>
+                <td><code>/health</code></td>
+                <td>— → JSON status + artifact availability</td>
+                <td>Liveness + readiness (returns 200 even when model is missing; reports flag).</td>
+              </tr>
+              <tr>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/sample-users</code></td>
+                <td>— → <code>SampleUsersResponse</code></td>
+                <td>Returns the curated demo users from <code>data/processed/sample_users.json</code>.</td>
+              </tr>
+              <tr>
+                <td><code>POST</code></td>
+                <td><code>/api/v1/rank</code></td>
+                <td><code>RankRequest</code> → <code>RankResponse</code></td>
+                <td>Top-K ranked offers with explanations and provenance.</td>
+              </tr>
+              <tr>
+                <td><code>POST</code></td>
+                <td><code>/api/v1/feedback</code></td>
+                <td><code>FeedbackEventRequest</code> → <code>FeedbackEventResponse</code></td>
+                <td>Persists a feedback event (viewed/clicked/accepted/dismissed/not_interested).</td>
+              </tr>
+              <tr>
+                <td><code>GET</code></td>
+                <td><code>/api/v1/feedback/metrics</code></td>
+                <td>— → <code>ProductMetricsReportResponse</code></td>
+                <td>Aggregates impressions + accept/dismiss proxies from the JSONL store.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 id="inference-schemas">E.3 Request &amp; response payloads</h3>
+          <p>All payloads are Pydantic v2 models with <code>extra="forbid"</code> to surface schema drift early.</p>
+          <pre><code class="language-json">// POST /api/v1/rank — request
+{
+  "user_id": "demo_user_002",
+  "user_profile": null,
+  "top_k": 5,
+  "context": null,
+  "debug": false
+}
+
+// 200 OK — response
+{
+  "request_id": "f3c2…",
+  "model_version": "run_20260524_123456",
+  "feature_version": "feature-default-v1",
+  "generated_at": "2026-05-25T17:09:11.123Z",
+  "results": [
+    {
+      "rank": 1,
+      "offer_id": "OFR-003",
+      "offer_type": "credit_card_upgrade",
+      "title": "Premium Credit Card Upgrade",
+      "model_score": 0.7421,
+      "normalized_score": 1.0,
+      "explanation": "Ranked highly because this profile suggests strong eligibility for credit upgrades.",
+      "model_version": "run_20260524_123456",
+      "request_id": "f3c2…",
+      "rerank_factors": { "priority_boost": 0.075, "raw_rank": 1, "reranked_rank": 1 }
+    }
+  ],
+  "warnings": []
+}</code></pre>
+
+          <h3 id="inference-services">E.4 Service decomposition</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>CandidateService</h4>
+              <p>
+                Loads sample users + offer CSV, resolves the requested user, then iterates active
+                offers calling the shared <code>check_eligibility</code>. For each eligible pair it
+                computes a deterministic <code>affinity_score</code> (used as a feature and as a
+                fallback signal) and explicitly drops <code>duration</code> from the payload as a
+                final leakage guard.
+              </p>
+            </div>
+            <div class="card">
+              <h4>RankingService</h4>
+              <p>
+                Builds features through <code>FeatureBuilder(is_training=False)</code>, scores via
+                <code>predict_proba</code> when artifacts are loaded, falls back to a heuristic
+                otherwise (<code>affinity + priority + recent-contact terms</code>), normalizes
+                scores within the request, and delegates to <code>RerankService</code> and
+                <code>ExplanationService</code>.
+              </p>
+            </div>
+            <div class="card">
+              <h4>RerankService</h4>
+              <p>
+                Externalized config (<code>rerank_config.json</code>): deduplicates by
+                <code>offer_id</code>, applies <code>priority_boost = priority_weight × 0.05</code>
+                (toggleable), caps <code>max_per_offer_type = 2</code> for diversity, and uses a
+                stable tie-break by <code>(-boosted_score, -normalized_score, offer_id)</code>.
+              </p>
+            </div>
+            <div class="card">
+              <h4>ExplanationService</h4>
+              <p>
+                Returns a deterministic, template-based explanation per <code>offer_type</code>
+                (5 templates + generic fallback) with a guaranteed <code>safe_generate</code>
+                that never throws. ADR-0004 documents the explicit deferral of any LLM
+                dependency in V1.
+              </p>
+            </div>
+          </div>
+
+          <h3 id="inference-fallback">E.5 Graceful degradation</h3>
+          <p>
+            <code>backend/app/core/model_loader.ModelArtifactLoader</code> deliberately avoids
+            importing the ML training package and instead loads the joblib model, the
+            <code>preprocessor.json</code>, and <code>run_manifest.json</code> with per-file
+            <code>ArtifactStatus</code>. If any are missing or corrupt:
+          </p>
+          <ul class="bul">
+            <li><code>/health</code> still returns 200 with <code>model_ready: false</code>.</li>
+            <li>
+              <code>RankingService._fallback_score</code> serves a deterministic heuristic so the
+              UI continues to render a ranked feed.
+            </li>
+            <li><code>model_version</code> in the response is <code>"fallback-v1"</code> for traceability.</li>
+            <li>A <code>warnings</code> array is populated in the response.</li>
+          </ul>
+
+          <h3 id="inference-feedback">E.6 Feedback &amp; impressions (the retraining seed)</h3>
+          <p>
+            On every successful rank, <code>FeedbackService.persist_impressions</code> appends one
+            line per displayed offer to <code>data/processed/feedback_events.jsonl</code> with
+            <code>event_type="impression"</code>, <code>rank_position</code>, and full provenance.
+            User actions (<code>viewed</code> / <code>clicked</code> / <code>accepted</code> /
+            <code>dismissed</code> / <code>not_interested</code>) are appended as
+            <code>event_type="feedback"</code>. ADR-0002 captures the rationale for JSONL: append
+            safety, zero infra, and Pandas/Polars readiness for V2 retraining.
+          </p>
+
+          <div class="callout callout--warning">
+            <div class="callout__label"><span class="marker"></span>Caveat · Latency &amp; concurrency</div>
+            <p>
+              V1 is single-process, synchronous, and writes to a single JSONL file with an
+              <code>"a"</code>-mode append. This is fine for a demo and CI but is
+              <strong>not</strong> safe under high concurrency on a shared filesystem. ADR-0002
+              flags this as accepted V1 debt — graduate to a queue + warehouse (e.g. Kinesis +
+              S3/Delta) before scaling.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== F. FRONTEND ====== -->
+        <section class="section" id="frontend" data-toc-title="F. Frontend &amp; ML Integration">
+          <h2>F. Frontend &amp; ML Integration (React)</h2>
+          <p class="section-sub">
+            How the React SPA consumes the ranking API and how UX is shaped by ML behavior.
+          </p>
+
+          <h3 id="frontend-stack">F.1 Stack</h3>
+          <ul class="bul">
+            <li><strong>React 19</strong> + <strong>TypeScript</strong> with strict typing (see <code>frontend/tsconfig.app.json</code>).</li>
+            <li><strong>Vite 8</strong> dev server and bundler (<code>frontend/vite.config.ts</code>).</li>
+            <li><strong>Tailwind CSS v4</strong> via <code>@tailwindcss/vite</code> plugin.</li>
+            <li><strong>lucide-react</strong> icon set.</li>
+            <li><strong>Vitest 4</strong> + <strong>jsdom</strong> for unit and integration tests.</li>
+          </ul>
+
+          <h3 id="frontend-client">F.2 The API client (<code>frontend/src/api/client.ts</code>)</h3>
+          <p>
+            <code>BankOfferApiClient</code> exposes four methods —
+            <code>probeBackend</code>, <code>checkHealth</code>, <code>getSampleUsers</code>,
+            <code>rankOffers</code>, <code>submitFeedback</code> — backed by interface types that
+            mirror the FastAPI Pydantic schemas one-for-one (<code>UserProfile</code>,
+            <code>RankedOffer</code>, <code>RankResponse</code>, <code>FeedbackEventRequest</code>,
+            etc.). Live and mock modes are first-class:
+          </p>
+          <pre><code class="language-typescript">const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+async rankOffers(userId: string, debug = true): Promise&lt;RankResponse&gt; {
+  if (!this.useLiveBackend) return /* deterministic local mock */;
+  const r = await fetch(`${API_BASE_URL}/api/v1/rank`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, debug }),
+  });
+  if (!r.ok) throw new Error("Failed to rank offers");
+  return r.json();
+}</code></pre>
+          <p>
+            On mount, <code>App.tsx</code> calls <code>probeBackend()</code> against
+            <code>/health</code> with a 2-second <code>AbortSignal.timeout</code>, then sets a
+            <code>LIVE</code>/<code>MOCKED</code> badge in the header. If the live API errors
+            mid-session, the client transparently falls back to the mock implementation so the demo
+            never breaks.
+          </p>
+
+          <h3 id="frontend-ux">F.3 UX patterns shaped by ML</h3>
+          <table class="spec">
+            <thead>
+              <tr>
+                <th>UX element</th>
+                <th>What it shows</th>
+                <th>Backed by</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Demographic selector</td>
+                <td>10 demo profiles from UCI distribution; switching re-triggers ranking.</td>
+                <td><code>GET /api/v1/sample-users</code></td>
+              </tr>
+              <tr>
+                <td>Ranked feed cards</td>
+                <td>Rank ribbon, category badge, title/description, "why this?" explanation.</td>
+                <td><code>RankResponse.results[].explanation</code></td>
+              </tr>
+              <tr>
+                <td>Diagnostics panel</td>
+                <td>Raw score, priority adjustment, normalized score, eligibility notes.</td>
+                <td><code>rerank_factors</code> + <code>getEligibilityNotes</code></td>
+              </tr>
+              <tr>
+                <td>API metadata block</td>
+                <td><code>request_id</code>, <code>model_version</code>, <code>feature_version</code>, <code>generated_at</code>.</td>
+                <td>Top-level <code>RankResponse</code> fields</td>
+              </tr>
+              <tr>
+                <td>Feedback audit stream</td>
+                <td>Per-action confirmation with backend-issued <code>event_id</code>.</td>
+                <td><code>POST /api/v1/feedback</code></td>
+              </tr>
+              <tr>
+                <td>Loading + error states</td>
+                <td>Spinner during inference, banner on API errors, empty-state for no eligible offers.</td>
+                <td><code>warnings[]</code> + HTTP status handling</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout callout--concept">
+            <div class="callout__label"><span class="marker"></span>Concept · Mirror your contracts in the client</div>
+            <p>
+              The TypeScript interfaces in <code>frontend/src/api/client.ts</code> are a 1:1
+              mirror of the Pydantic schemas in <code>backend/app/schemas/</code>. Treat both as
+              generated artifacts of the same contract — when adding a field, update both. A
+              contract drift check (e.g. OpenAPI → TS codegen) is a natural next step.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== G. COMPUTE / INFRA ====== -->
+        <section class="section" id="infra" data-toc-title="G. Compute, Env &amp; Infra">
+          <h2>G. Compute, Environment &amp; Infrastructure</h2>
+          <p class="section-sub">
+            Runtime, dependencies, deployment patterns, and observability.
+          </p>
+
+          <h3 id="infra-runtime">G.1 Runtime characteristics</h3>
+          <ul class="bul">
+            <li><strong>CPU only.</strong> No GPU — gradient-boosted trees on tabular data.</li>
+            <li><strong>Memory.</strong> ~100K row training and inference fit comfortably in a few hundred MB.</li>
+            <li><strong>Concurrency.</strong> Single-process FastAPI (<code>uvicorn</code>); services are instantiated module-side and reused across requests.</li>
+            <li><strong>Storage.</strong> Local filesystem for artifacts and the JSONL feedback store; optional S3 for artifact transfer in AWS.</li>
+          </ul>
+
+          <h3 id="infra-deps">G.2 Dependencies &amp; package management</h3>
+          <p><strong>Python</strong> (<code>pyproject.toml</code>, managed via <code>uv</code>):</p>
+          <pre><code class="language-toml">[project]
+name = "bank-offer-feed-ranking"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110.0",
+  "uvicorn>=0.28.0",
+  "pydantic>=2.6.0",
+  "pandas>=2.2.0",
+  "numpy>=1.26.0",
+  "scikit-learn>=1.4.0",
+  "lightgbm>=4.3.0",      # available for future iterations
+  "pyarrow>=15.0.0",
+  "httpx>=0.27.0",
+]
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "pytest-cov>=4.1.0", "ruff>=0.3.0", "mypy>=1.8.0"]</code></pre>
+          <p>
+            <code>backend/requirements.txt</code> is the minimal runtime subset used by lightweight
+            installs (<code>fastapi · uvicorn · pytest · httpx</code>).
+          </p>
+          <p><strong>Frontend</strong> (<code>frontend/package.json</code>):</p>
+          <pre><code class="language-json">{
+  "dependencies": { "react": "^19.2.6", "react-dom": "^19.2.6", "lucide-react": "^1.16.0" },
+  "devDependencies": {
+    "vite": "^8.0.12", "@vitejs/plugin-react": "^6.0.1",
+    "tailwindcss": "^4.3.0", "@tailwindcss/vite": "^4.3.0",
+    "typescript": "~6.0.2", "vitest": "^4.1.7", "jsdom": "^29.1.1"
+  }
+}</code></pre>
+
+          <h3 id="infra-config">G.3 Configuration surface</h3>
+          <p>
+            <code>backend/app/core/config.Settings</code> is a frozen dataclass driven entirely by
+            environment variables with sensible defaults:
+          </p>
+          <table class="spec">
+            <thead>
+              <tr><th>Variable</th><th>Default</th><th>Effect</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>APP_NAME</code></td><td><code>Bank Offer Feed Ranking API</code></td><td>FastAPI app title</td></tr>
+              <tr><td><code>APP_ENV</code></td><td><code>development</code></td><td>Tagged into every structured log line</td></tr>
+              <tr><td><code>APP_VERSION</code></td><td><code>0.1.0</code></td><td>OpenAPI version</td></tr>
+              <tr><td><code>MAX_TOP_K</code></td><td><code>20</code></td><td>Upper bound on <code>top_k</code></td></tr>
+              <tr><td><code>DEFAULT_TOP_K</code></td><td><code>5</code></td><td>Default <code>top_k</code> when omitted</td></tr>
+              <tr><td><code>SAMPLE_USERS_PATH</code></td><td><code>data/processed/sample_users.json</code></td><td>Demo profiles file</td></tr>
+              <tr><td><code>OFFERS_PATH</code></td><td><code>data/synthetic/offers.csv</code></td><td>Offer catalog file</td></tr>
+              <tr><td><code>FEATURE_SCHEMA_PATH</code></td><td><code>shared/contracts/feature_schema.json</code></td><td>Shared feature schema</td></tr>
+              <tr><td><code>RERANK_CONFIG_PATH</code></td><td><code>backend/app/services/rerank_config.json</code></td><td>Rerank rules</td></tr>
+              <tr><td><code>FEEDBACK_STORE_PATH</code></td><td><code>data/processed/feedback_events.jsonl</code></td><td>Append-only feedback store</td></tr>
+              <tr><td><code>MODEL_ARTIFACTS_DIR</code></td><td><code>ml/artifacts/</code></td><td>Where model + manifest are read from</td></tr>
+              <tr><td><code>VITE_API_BASE_URL</code></td><td><code>http://localhost:8000</code></td><td>Frontend → backend URL</td></tr>
+            </tbody>
+          </table>
+
+          <h3 id="infra-deploy">G.4 Deployment patterns</h3>
+          <p>
+            V1 ships <strong>without Docker</strong> by design (ADR-0003 + <code>docs/install-aws.md</code>).
+            Two paths are supported:
+          </p>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Local development</h4>
+              <p>
+                <code>uv sync --extra dev</code> for Python, <code>npm install</code> for the
+                frontend, three pipeline modules to generate artifacts, then
+                <code>uvicorn app.main:app --reload --port 8000</code> and
+                <code>npm run dev</code>. End-to-end driven by <code>docs/install-local.md</code>
+                and <code>docs/runbook.md</code>.
+              </p>
+            </div>
+            <div class="card">
+              <h4>AWS single EC2</h4>
+              <p>
+                <code>t3.medium</code>+ Amazon Linux/Ubuntu, ports 22/8000/5173, optional S3
+                bucket for shipping <code>ml/artifacts/</code> via an instance IAM role
+                (<code>s3:GetObject</code>). Static frontend is built with
+                <code>VITE_API_BASE_URL=http://&lt;ec2&gt;:8000 npm run build</code> and served
+                via <code>npx serve</code> or Nginx. No ALB, no RDS, no ECS — explicitly demo
+                scope.
+              </p>
+            </div>
+          </div>
+          <p>
+            <code>infra/</code> is a scaffold for future Terraform — there is no committed IaC
+            stack yet; the AWS guide reflects what is currently supported.
+          </p>
+
+          <h3 id="infra-ci">G.5 CI/CD &amp; quality gate</h3>
+          <p>Three path-filtered GitHub Actions workflows run on PR and on push to <code>main</code>:</p>
+          <table class="spec">
+            <thead>
+              <tr><th>Workflow</th><th>Path filter</th><th>What it runs</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>.github/workflows/backend-ci.yml</code></td>
+                <td><code>backend/**</code>, <code>shared/**</code>, <code>pyproject.toml</code></td>
+                <td><code>ruff check</code>, <code>mypy</code>, <code>pytest backend/tests shared/tests</code></td>
+              </tr>
+              <tr>
+                <td><code>.github/workflows/ml-ci.yml</code></td>
+                <td><code>ml/**</code>, <code>shared/**</code>, <code>data/**</code>, <code>scripts/check_ml_artifacts.py</code></td>
+                <td><code>ruff check ml shared</code>, <code>pytest ml/tests</code>, <code>python scripts/check_ml_artifacts.py</code></td>
+              </tr>
+              <tr>
+                <td><code>.github/workflows/frontend-ci.yml</code></td>
+                <td><code>frontend/**</code>, <code>package.json</code></td>
+                <td><code>npm run lint</code>, <code>npm run test</code> (Vitest)</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            Local mirror: <code>bash scripts/quality.sh</code> runs all of the above sequentially.
+            A <code>.pre-commit-config.yaml</code> hooks Python lint/format on staged files.
+          </p>
+
+          <h3 id="infra-obs">G.6 Observability</h3>
+          <p>
+            <code>backend/app/core/logging.StructuredJsonFormatter</code> emits one JSON line per
+            event with a fixed envelope:
+          </p>
+          <pre><code class="language-json">{
+  "timestamp": "2026-05-25T17:09:11.123Z",
+  "level": "INFO",
+  "logger": "app.api.rank",
+  "message": "rank response returned",
+  "environment": "development",
+  "request_id": "f3c2…",
+  "correlation_id": "…",
+  "model_version": "run_20260524_123456",
+  "feature_version": "feature-default-v1",
+  "event_type": "rank_response_returned",
+  "results_count": 5
+}</code></pre>
+          <p>
+            HTTP middleware in <code>backend/app/main.py</code> binds <code>x-request-id</code> and
+            <code>x-correlation-id</code> headers to context variables (<code>ContextVar</code>),
+            so every downstream log line carries the same identifiers without explicit passing.
+            <code>log_event(...)</code> guarantees that every emission includes
+            <code>event_type</code>, <code>model_version</code>, and <code>feature_version</code>
+            (defaulting to <code>"unknown"</code>) — the three fields that make a log line useful
+            for ML triage.
+          </p>
+          <p>
+            Product metrics are computed lazily from the JSONL store by
+            <code>FeedbackService.generate_metrics_report</code> and surfaced at
+            <code>GET /api/v1/feedback/metrics</code>: impressions, feedback events, accept proxies
+            (<code>accepted | clicked</code>), and dismiss proxies
+            (<code>dismissed | not_interested</code>).
+          </p>
+
+          <div class="callout callout--takeaway">
+            <div class="callout__label"><span class="marker"></span>Key takeaway</div>
+            <p>
+              <strong>One log envelope. Three required ML fields.</strong>
+              <code>request_id</code>, <code>model_version</code>, <code>feature_version</code> let
+              you tie any production incident back to a specific run manifest and a specific
+              feature schema. Engineer this in early — backfilling it later is painful.
+            </p>
+          </div>
+        </section>
+
+        <!-- ====== H. CROSS-CUTTING ====== -->
+        <section class="section" id="cross-cutting" data-toc-title="H. Cross-Cutting &amp; Rationale">
+          <h2>H. Cross-Cutting Concerns &amp; Design Rationale</h2>
+          <p class="section-sub">
+            The decisions that shaped this codebase — and the debt they create.
+          </p>
+
+          <h3 id="cc-decisions">H.1 Architecture Decision Records (ADRs)</h3>
+          <table class="spec">
+            <thead>
+              <tr><th>ADR</th><th>Decision</th><th>Trade-off accepted</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>0001-model-choice.md</code></td>
+                <td><code>HistGradientBoostingClassifier</code> baseline</td>
+                <td>Pointwise only; ranking is sort + rerank rather than NDCG-optimized.</td>
+              </tr>
+              <tr>
+                <td><code>0002-feedback-storage.md</code></td>
+                <td>Local JSONL feedback store</td>
+                <td>Single-node concurrency; no SQL aggregations.</td>
+              </tr>
+              <tr>
+                <td><code>0003-react-spa.md</code></td>
+                <td>React + Vite SPA, no SSR</td>
+                <td>No SEO/first-paint benefits; depends on CORS + backend availability.</td>
+              </tr>
+              <tr>
+                <td><code>0004-llm-deferral.md</code></td>
+                <td>Deterministic templated explanations</td>
+                <td>Stylistically robotic explanations; LLM upgrade deferred to V2.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 id="cc-debt">H.2 Known limitations &amp; technical debt</h3>
+          <ul class="bul">
+            <li><strong>Synthetic labels.</strong> Heuristic + 5% deterministic noise (<code>md5(user_id+offer_id) % 100</code>) — strong inductive bias toward the rule set.</li>
+            <li><strong>Static model.</strong> No online learning; the model is recompiled offline. Feedback is captured but not yet wired into a retraining job.</li>
+            <li><strong>Single-process serving.</strong> No queue/worker pattern; rank requests are blocking and write to a shared JSONL file.</li>
+            <li><strong>No batch inference.</strong> V1 intentionally ships only real-time scoring.</li>
+            <li><strong>No experiment tracking platform.</strong> Runs are captured by <code>run_manifest.json</code>; there is no MLflow/W&amp;B integration yet (deliberate per <code>specs/requirements.md</code> §10).</li>
+            <li><strong>No infra-as-code.</strong> <code>infra/</code> is a placeholder; AWS is documented but not Terraformed.</li>
+            <li><strong>Two response shapes for <code>rerank_factors</code>.</strong> The Pydantic model is permissive (<code>dict[str, Any]</code>); long-term, lock it to a typed shape.</li>
+          </ul>
+
+          <h3 id="cc-future">H.3 Future improvements (roadmap-worthy)</h3>
+          <ul class="bul">
+            <li><strong>Pair/listwise objective.</strong> Swap the classifier for LightGBM <code>LambdaRank</code> using the same <code>FeatureBuilder</code>.</li>
+            <li><strong>Hybrid candidate generation.</strong> Add a retrieval stage (e.g. embedding-based) before eligibility filtering.</li>
+            <li><strong>Online feature store.</strong> Replace ad-hoc affinity computations with a managed online feature service when latency matters.</li>
+            <li><strong>Feedback-driven retraining.</strong> Schedule a job that reads <code>feedback_events.jsonl</code>, derives labels, retrains, and publishes a new <code>run_manifest.json</code>.</li>
+            <li><strong>LLM explanation rewrite.</strong> Pass the deterministic template + top features to a small LLM for stylistic phrasing; keep the deterministic version as a safety fallback.</li>
+            <li><strong>Containerization.</strong> Multi-stage Docker for backend + a static frontend image behind Nginx; deploy to ECS/Fargate.</li>
+            <li><strong>Observability stack.</strong> Ship the JSON logs to a tracing/aggregation backend (LangSmith / OpenTelemetry / CloudWatch).</li>
+          </ul>
+
+          <h3 id="cc-remember">H.4 Concepts worth remembering</h3>
+          <div class="grid-2">
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Train/serve parity by shared function</div>
+              <p>
+                A schema + a single Python function reused in both pipelines is the cheapest, most
+                reliable way to prevent skew without a feature store.
+              </p>
+            </div>
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Defense in depth for leakage</div>
+              <p>
+                Encode the same constraint (here, drop <code>duration</code>) in the schema, the
+                preprocess step, the feature builder, and the candidate service. Redundant checks
+                are cheap and have saved countless models.
+              </p>
+            </div>
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Group-aware splits</div>
+              <p>
+                If a user has multiple rows, splitting randomly leaks information across train/val.
+                Use <code>GroupShuffleSplit(group=user_id)</code> as this repo does.
+              </p>
+            </div>
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Per-request normalization ≠ calibration</div>
+              <p>
+                Min-max within a request stabilizes UI sort and lets reranking blend. It does
+                <em>not</em> calibrate scores across requests — don't compare them across users.
+              </p>
+            </div>
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Externalized rerank config</div>
+              <p>
+                Business rules belong in JSON, not code. Diversity caps, priority weights, and
+                fairness constraints should change without retraining the model.
+              </p>
+            </div>
+            <div class="callout callout--concept">
+              <div class="callout__label"><span class="marker"></span>Graceful degradation by default</div>
+              <p>
+                Always carry a deterministic fallback path. A missing artifact should produce a
+                degraded response, never a 500.
+              </p>
+            </div>
+          </div>
+
+          <hr class="sep" />
+
+          <div class="callout callout--takeaway">
+            <div class="callout__label"><span class="marker"></span>Bottom line</div>
+            <p>
+              This repository is intentionally small, fully reproducible, and built around
+              contracts. If you remember three things: <strong>(1)</strong> the same
+              <code>FeatureBuilder</code> runs offline and online; <strong>(2)</strong> every
+              prediction is traceable via <code>request_id</code> + <code>model_version</code> +
+              <code>feature_version</code> in the structured logs and the response; and
+              <strong>(3)</strong> the JSONL feedback store is the seed for V2 retraining — you can
+              navigate the rest from the code.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <span>© 2026 Bank Offer Feed Ranking · Built on UCI Bank Marketing dataset (CC BY 4.0).</span>
+      <span>
+        <a href="https://github.com/" target="_blank" rel="noopener noreferrer">Repository</a>
+        &nbsp;·&nbsp;
+        <a href="/">Back to app</a>
+      </span>
+    </footer>
+
+    <!-- ============== SCRIPTS ============== -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script>
+      (function () {
+        const root = document.documentElement;
+        const themeKey = "bofr-doc-theme";
+
+        function setTheme(theme) {
+          root.setAttribute("data-theme", theme);
+          try {
+            localStorage.setItem(themeKey, theme);
+          } catch (_) {}
+          const label = document.getElementById("themeLabel");
+          if (label) label.textContent = theme === "dark" ? "Light" : "Dark";
+          if (window.mermaid) {
+            try {
+              window.mermaid.initialize({
+                startOnLoad: false,
+                theme: theme === "dark" ? "dark" : "default",
+                themeVariables:
+                  theme === "dark"
+                    ? {
+                        background: "#0b1020",
+                        primaryColor: "#1a2347",
+                        primaryTextColor: "#e7ecff",
+                        primaryBorderColor: "#5b8cff",
+                        lineColor: "#7dd3fc",
+                        secondaryColor: "#0f1530",
+                        tertiaryColor: "#121933",
+                      }
+                    : {
+                        background: "#ffffff",
+                        primaryColor: "#eef2fb",
+                        primaryTextColor: "#14213d",
+                        primaryBorderColor: "#2d5cff",
+                        lineColor: "#0284c7",
+                        secondaryColor: "#f6f8fd",
+                        tertiaryColor: "#ffffff",
+                      },
+              });
+              renderMermaid();
+            } catch (_) {}
+          }
+        }
+
+        function initTheme() {
+          let theme = "dark";
+          try {
+            theme = localStorage.getItem(themeKey) || "dark";
+          } catch (_) {}
+          setTheme(theme);
+        }
+
+        function renderMermaid() {
+          if (!window.mermaid) return;
+          const nodes = document.querySelectorAll(".mermaid");
+          nodes.forEach((n) => {
+            if (n.dataset.source === undefined) n.dataset.source = n.textContent;
+            n.removeAttribute("data-processed");
+            n.innerHTML = n.dataset.source;
+          });
+          window.mermaid.run({ querySelector: ".mermaid" });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          initTheme();
+
+          const tBtn = document.getElementById("themeToggle");
+          if (tBtn)
+            tBtn.addEventListener("click", function () {
+              const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+              setTheme(next);
+            });
+
+          // ---------- Build TOC from h2/h3 inside sections ----------
+          const tocList = document.getElementById("toc-list");
+          const headings = [];
+          document.querySelectorAll("section.section").forEach((sec) => {
+            const h2 = sec.querySelector("h2");
+            if (!h2) return;
+            if (!sec.id)
+              sec.id = h2.textContent
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "");
+            headings.push({ id: sec.id, level: 2, text: sec.dataset.tocTitle || h2.textContent });
+            sec.querySelectorAll("h3").forEach((h3) => {
+              if (!h3.id) {
+                h3.id =
+                  sec.id +
+                  "--" +
+                  h3.textContent
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
+              }
+              headings.push({ id: h3.id, level: 3, text: h3.textContent });
+            });
+          });
+
+          headings.forEach((h) => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = "#" + h.id;
+            a.textContent = h.text;
+            a.className = h.level === 3 ? "toc-h3" : "toc-h2";
+            a.dataset.target = h.id;
+            li.appendChild(a);
+            tocList.appendChild(li);
+          });
+
+          // ---------- Reading progress ----------
+          const progressFill = document.getElementById("progress-fill");
+          const tocProgress = document.getElementById("toc-progress");
+          function updateProgress() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+            if (progressFill) progressFill.style.width = pct + "%";
+            if (tocProgress) tocProgress.style.width = pct + "%";
+          }
+          window.addEventListener("scroll", updateProgress, { passive: true });
+          updateProgress();
+
+          // ---------- Active-section spy ----------
+          const targets = headings.map((h) => document.getElementById(h.id)).filter(Boolean);
+          const links = Array.from(tocList.querySelectorAll("a"));
+          const linkById = Object.fromEntries(links.map((a) => [a.dataset.target, a]));
+          let visible = new Map();
+          const io = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) =>
+                visible.set(e.target.id, { ratio: e.intersectionRatio, top: e.boundingClientRect.top })
+              );
+              let bestId = null;
+              let bestTop = Infinity;
+              for (const [id, info] of visible) {
+                if (info.ratio > 0 && info.top >= 0 && info.top < bestTop) {
+                  bestTop = info.top;
+                  bestId = id;
+                }
+              }
+              if (!bestId) {
+                let lastVisible = null;
+                let lastTop = -Infinity;
+                for (const [id, info] of visible) {
+                  if (info.ratio > 0 && info.top < 0 && info.top > lastTop) {
+                    lastTop = info.top;
+                    lastVisible = id;
+                  }
+                }
+                bestId = lastVisible;
+              }
+              links.forEach((a) => a.classList.remove("active"));
+              if (bestId && linkById[bestId]) linkById[bestId].classList.add("active");
+            },
+            { rootMargin: "-80px 0px -70% 0px", threshold: [0, 0.2, 0.6, 1] }
+          );
+          targets.forEach((el) => io.observe(el));
+
+          // ---------- Mobile TOC ----------
+          const toc = document.getElementById("toc");
+          const tocToggle = document.getElementById("tocToggle");
+          if (tocToggle)
+            tocToggle.addEventListener("click", () => toc.classList.toggle("open"));
+          toc.addEventListener("click", (e) => {
+            if (e.target.tagName === "A" && window.innerWidth <= 980) toc.classList.remove("open");
+          });
+
+          // ---------- Mermaid kickoff once ----------
+          if (window.mermaid) {
+            try {
+              window.mermaid.initialize({
+                startOnLoad: false,
+                theme: root.getAttribute("data-theme") === "dark" ? "dark" : "default",
+              });
+              renderMermaid();
+            } catch (e) {
+              console.warn("Mermaid init failed", e);
+            }
+          }
+
+          // ---------- Prism autoload prefix ----------
+          if (window.Prism && window.Prism.plugins && window.Prism.plugins.autoloader) {
+            window.Prism.plugins.autoloader.languages_path =
+              "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

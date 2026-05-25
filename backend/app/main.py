@@ -1,9 +1,11 @@
 """FastAPI application entrypoint."""
 
 import logging
+import os
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.feedback import router as feedback_router
 from app.api.health import router as health_router
@@ -28,6 +30,16 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(rank_router)
     app.include_router(feedback_router)
+
+    cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[origin.strip() for origin in cors_origins.split(",") if origin.strip()],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @app.middleware("http")
     async def request_context_middleware(request: Request, call_next):

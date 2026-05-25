@@ -1,0 +1,22 @@
+# Copy to terraform.tfvars and adjust.
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region   = "us-east-1"
+project_name = "bofr"
+environment  = "dev"
+
+# First apply: set enable_lambda = false (ECR exists but no image yet).
+# After docker push: set enable_lambda = true and apply again.
+enable_lambda      = false
+enable_cloudfront  = true
+lambda_image_tag   = "latest"
+lambda_memory_size = 2048
+lambda_timeout     = 30
+
+# Demo-only: tighten for production.
+api_gateway_cors_allow_origins = ["*"]
+force_destroy_buckets          = true
+
+tags = {
+  Owner = "your-team"
+}
